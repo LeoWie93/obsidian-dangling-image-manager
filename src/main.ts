@@ -1,80 +1,153 @@
-import {App, Editor, MarkdownView, Modal, Notice, Plugin} from 'obsidian';
-import {DEFAULT_SETTINGS, MyPluginSettings, SampleSettingTab} from "./settings";
+import { App, Modal, Notice, Plugin, TAbstractFile, TFile } from 'obsidian';
+import { DEFAULT_SETTINGS, ImageManagerSettings, ImageManagerSettingTab } from "./settings";
+import { supportedImageExtensions, getLinkedImages, supportedTextfileExtensions } from 'lib/FileParser';
+import { isDocument, isImage } from 'lib/Helpers';
+import { VaultState } from 'lib/VaultState';
+import { SyncTaskQueue } from 'lib/Queue/SyncTaskQueue';
+import { AddImage, RemoveDocument, RemoveImage, RenameImage, UpdateImageRelations } from 'lib/Queue/Tasks';
+import * as logger from 'lib/Logger';
 
 // Remember to rename these classes and interfaces!
-
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+export default class ImageManager extends Plugin {
+	syncQueue: SyncTaskQueue = new SyncTaskQueue();
+	settings: ImageManagerSettings;
+	vaultState: VaultState;
 
 	async onload() {
 		await this.loadSettings();
+		logger.setLoglevel(this.settings.logLevel);
 
-		// This creates an icon in the left ribbon.
-		this.addRibbonIcon('dice', 'Sample', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
-		});
-
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status bar text');
-
-		// This adds a simple command that can be triggered anywhere
-		this.addCommand({
-			id: 'open-modal-simple',
-			name: 'Open modal (simple)',
-			callback: () => {
-				new SampleModal(this.app).open();
+		this.app.workspace.onLayoutReady(async () => {
+			//PERFORMANCE logging
+			let startTime: number | null = null;
+			if (this.settings.performanceTrackingEnabled) {
+				startTime = performance.now();
 			}
-		});
-		// This adds an editor command that can perform some operation on the current editor instance
-		this.addCommand({
-			id: 'replace-selected',
-			name: 'Replace selected content',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				editor.replaceSelection('Sample editor command');
-			}
-		});
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'open-modal-complex',
-			name: 'Open modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
 
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
+			const files: TFile[] = this.app.vault.getFiles();
+
+			const physicalImages: Map<string, TFile> = new Map<string, TFile>;
+			files.forEach((file: TFile) => {
+				if (supportedImageExtensions.includes(file.extension)) {
+					physicalImages.set(file.name, file);
 				}
-				return false;
+			});
+			this.vaultState = new VaultState(physicalImages);
+
+
+			const documentFiles: TFile[] = files.filter((file: TFile) => {
+				// file.deleted does not exist per interface BUT is present anyways. So yeah ignore this error because typescript?
+				return (supportedTextfileExtensions.includes(file.extension) && !file.deleted);
+			});
+
+			for (const file of documentFiles) {
+				const linkedImages: string[] = await getLinkedImages(file, this.app);
+				linkedImages.forEach((imageName) => {
+					this.syncQueue.enqueue(
+						new UpdateImageRelations(imageName, file, this.vaultState)
+					);
+				});
+			}
+
+			if (this.settings.performanceTrackingEnabled && startTime) {
+				performance.measure("Parsing complete", {
+					start: startTime,
+					end: performance.now(),
+					detail: {
+						devtools: {
+							dataType: "track-entry",
+							track: "File Parsing",
+							trackGroup: "Image Manager",
+							color: "tertiary-dark",
+							properties: [
+								["Filter Type", "Gaussian Blur"],
+							],
+							tooltipText: "Files parsed succesfully",
+						}
+					}
+				});
+			}
+
+			logger.debug("Image Relations", this.vaultState.imageRelations);
+			logger.debug("Physical Images", this.vaultState.physicalImages);
+			logger.debug("Dangling Images", this.vaultState.getDanglingImages());
+
+			this.app.vault.on('create', async (file: TAbstractFile) => {
+				logger.trace("Create handler", "entered");
+				logger.debug("Created file", file);
+
+				if (file instanceof TFile) {
+					if (isDocument(file)) {
+						const linkedImages: string[] = await getLinkedImages(file, this.app);
+						linkedImages.forEach((imageName) => {
+							this.syncQueue.enqueue(
+								new UpdateImageRelations(imageName, file, this.vaultState)
+							);
+						});
+					} else if (isImage(file)) {
+						this.syncQueue.enqueue(new AddImage(file, this.vaultState));
+					}
+				}
+			});
+
+			this.app.vault.on('modify', async (file: TAbstractFile) => {
+				logger.trace("Modify handler", "entered");
+				logger.debug("Modified file", file);
+
+				if (file instanceof TFile && isDocument(file)) {
+					const linkedImages: string[] = await getLinkedImages(file, this.app);
+					linkedImages.forEach((imageName) => {
+						this.syncQueue.enqueue(
+							new UpdateImageRelations(imageName, file, this.vaultState)
+						);
+					});
+				}
+			});
+
+			this.app.vault.on('rename', (newFile: TAbstractFile, oldPath: string) => {
+				logger.trace("Rename handler", "entered");
+				logger.debug("New file", newFile);
+				logger.debug("Oldpath", oldPath);
+
+				if (newFile instanceof TFile) {
+					if (isImage(newFile)) {
+						this.syncQueue.enqueue(new RenameImage(oldPath, newFile, this.vaultState));
+					}
+					//Files do not need to be handled. We have the TFile reference directly in our map, which is updated by obsidian
+				}
+			});
+
+			this.app.vault.on('delete', (file: TAbstractFile) => {
+				logger.trace("Delete handler", "entered");
+				logger.debug("Deleted file", file);
+
+				if (file instanceof TFile) {
+					if (isDocument(file)) {
+						this.syncQueue.enqueue(new RemoveDocument(file, this.vaultState));
+					} else if (isImage(file)) {
+						this.syncQueue.enqueue(new RemoveImage(file, this.vaultState));
+					}
+				}
+			});
+		});
+
+		this.addCommand({
+			id: 'image-cleanup',
+			name: 'Image Cleanup Manager',
+			callback: () => {
+				new ManageModal(this.app, this.vaultState).open();
 			}
 		});
 
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
-
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			new Notice("Click");
-		});
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
-
+		this.addSettingTab(new ImageManagerSettingTab(this.app, this));
 	}
 
 	onunload() {
+		//we have nothing to cleanup on disk etc.
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<MyPluginSettings>);
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<ImageManagerSettings>);
 	}
 
 	async saveSettings() {
@@ -82,18 +155,95 @@ export default class MyPlugin extends Plugin {
 	}
 }
 
-class SampleModal extends Modal {
-	constructor(app: App) {
+class ManageModal extends Modal {
+	vaultState: VaultState;
+
+	constructor(app: App, vaultState: VaultState) {
 		super(app);
+		this.vaultState = vaultState;
 	}
 
 	onOpen() {
-		let {contentEl} = this;
-		contentEl.setText('Woah!');
+		let { contentEl } = this;
+
+		const modal: Element | null = this.containerEl.querySelector("div.modal");
+		if (modal instanceof HTMLElement) {
+			modal.style.width = "100%";
+		}
+
+		const modalTitle: HTMLHeadingElement = document.createElement("h1");
+		modalTitle.setText("Image Manager");
+		contentEl.appendChild(modalTitle);
+
+		const entryGridContainer = document.createElement("div");
+		entryGridContainer.classList.add("entry-grid-container");
+
+		const danglingImages = this.vaultState.getDanglingImages();
+		danglingImages.forEach((file: TFile) => {
+			const entryCard = document.createElement("div");
+			entryCard.classList.add("entry-card");
+			entryCard.dataset.filePath = file.path;
+
+			const name = document.createElement("h3");
+			name.setText(file.basename);
+
+			const filePath = document.createElement("p");
+			filePath.setText(file.path);
+
+			const openButton = document.createElement("button");
+			openButton.type = "button";
+			openButton.classList.add("open-image-button");
+			openButton.setText("Open image");
+			openButton.onClickEvent(() => {
+				this.app.workspace.getLeaf().openFile(file);
+				this.close();
+			});
+
+			const deleteButton = document.createElement("button");
+			deleteButton.type = "button";
+			deleteButton.classList.add("delete-image-button");
+			deleteButton.setText("Delete image");
+			deleteButton.onClickEvent(() => {
+				this.app.fileManager.promptForDeletion(file).then(() => {
+					if (file.deleted) {
+						logger.trace("delete-button", "User approved removal.");
+
+						const deleteEntryCard = entryGridContainer.querySelector("div[data-file-path='" + file.path + "']");
+						if (deleteEntryCard !== null) {
+							entryGridContainer.removeChild(deleteEntryCard);
+						} else {
+							logger.error("delete-button", "Removed file {" + file.name + "} but did not find entryCard to remove from list");
+							new Notice("File with name {" + file.name + "} was deleted but we could not update the list. Closing modal.");
+							this.close();
+						}
+					} else {
+						logger.trace("delete-button", "User denied removal.");
+					}
+				});
+			});
+
+			const buttonGroup = document.createElement("div");
+			buttonGroup.classList.add("button-group");
+			buttonGroup.appendChild(openButton);
+			buttonGroup.appendChild(deleteButton);
+
+			// Preview Image
+			const resourcePath = this.app.vault.getResourcePath(file);
+			const previewImage = document.createElement("img");
+			previewImage.src = resourcePath;
+
+			entryCard.appendChild(name);
+			entryCard.appendChild(filePath);
+			entryCard.appendChild(previewImage);
+			entryCard.appendChild(buttonGroup);
+			entryGridContainer.appendChild(entryCard);
+		});
+
+		contentEl.appendChild(entryGridContainer);
 	}
 
 	onClose() {
-		const {contentEl} = this;
+		const { contentEl } = this;
 		contentEl.empty();
 	}
 }

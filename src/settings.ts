@@ -1,36 +1,56 @@
-import {App, PluginSettingTab, Setting} from "obsidian";
-import MyPlugin from "./main";
+import { App, PluginSettingTab, Setting } from "obsidian";
+import ImageManager from "./main";
 
-export interface MyPluginSettings {
-	mySetting: string;
+export interface ImageManagerSettings {
+	performanceTrackingEnabled: boolean;
+	logLevel: number;
 }
 
-export const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
+export const DEFAULT_SETTINGS: ImageManagerSettings = {
+	performanceTrackingEnabled: false,
+	logLevel: 5,
 }
 
-export class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
+export class ImageManagerSettingTab extends PluginSettingTab {
+	plugin: ImageManager;
 
-	constructor(app: App, plugin: MyPlugin) {
+	constructor(app: App, plugin: ImageManager) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
 
 	display(): void {
-		const {containerEl} = this;
+		const { containerEl } = this;
 
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('Settings #1')
-			.setDesc('It\'s a secret')
-			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
+			.setName("Logging Level")
+			.addDropdown(dropDown => dropDown
+				.addOptions({ "5": "Errors", "4": "Warnings", "3": "Debugging", "2": "Tracing" })
+				.setValue(String(this.plugin.settings.logLevel))
 				.onChange(async (value) => {
-					this.plugin.settings.mySetting = value;
-					await this.plugin.saveSettings();
+					const newValue: number = Number(value);
+					try {
+						if (newValue >= 0 && newValue <= 5) {
+							this.plugin.settings.logLevel = newValue;
+							await this.plugin.saveSettings();
+						}
+					} catch (e) {
+						console.error("Settings", String(newValue) + " is not a valid loglevel");
+					}
 				}));
+
+		new Setting(containerEl)
+			.setName("Performance Tracking")
+			.setDesc("Enable Browser `Performance` measuring in the Developer Console for the plugins startup.")
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.performanceTrackingEnabled)
+				.onChange(async (value) => {
+					this.plugin.settings.performanceTrackingEnabled = value;
+					await this.plugin.saveSettings();
+				})
+			);
 	}
 }
+

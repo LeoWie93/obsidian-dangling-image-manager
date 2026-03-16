@@ -59,7 +59,7 @@ export class RemoveDocument implements Task {
 		}
 
 		this.vaultState.removeDocument(this.document);
-		logger.trace("ImageRelations after removeDocument: ", this.vaultState.imageRelations);
+		logger.debug("ImageRelations after removeDocument: ", { value: this.vaultState.imageRelations });
 
 		this.vaultState.releaseLock();
 	}

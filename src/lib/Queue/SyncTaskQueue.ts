@@ -29,9 +29,9 @@ export class SyncTaskQueue {
 			await task?.execute();
 		} catch (e) {
 			if (e instanceof Error) {
-				logger.error("Task failed with error", e.message);
+				logger.error("Task failed with error", { message: e.message });
 			} else {
-				logger.error("Task failed", e);
+				logger.error("Task failed", { error: e });
 			}
 		}
 

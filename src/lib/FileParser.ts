@@ -18,7 +18,7 @@ export async function getLinkedImages(file: TFile, app: App): Promise<string[]> 
 	const regex: RegExp | undefined = filetypeToRegexMap.get(file.extension);
 
 	if (regex === undefined) {
-		logger.warn("Parser for fileextension not found", file.extension);
+		logger.warn("Parser for fileextension not found", { message: file.extension });
 		return [];
 	}
 

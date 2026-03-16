@@ -48,9 +48,9 @@ export class VaultState {
 	removeImageByName(imageName: string): void {
 		if (this.physicalImages.has(imageName)) {
 			this.physicalImages.delete(imageName);
-			logger.trace("Removed image from physicalImages", imageName);
+			logger.debug("Removed image from physicalImages", { value: imageName });
 		} else {
-			logger.warn("Image was never tracked in physicalImages", imageName);
+			logger.warn("Image was never tracked in physicalImages", { value: imageName });
 		}
 	}
 
@@ -73,7 +73,7 @@ export class VaultState {
 				logger.debug("Removed relation of " + document.name + " from image " + imageName, relations);
 				if (relations.size === 0) {
 					this.imageRelations.delete(imageName);
-					logger.trace("No relations left. Removing entry for image", imageName);
+					logger.debug("No relations left. Removing entry for image", { value: imageName });
 				}
 			}
 		});

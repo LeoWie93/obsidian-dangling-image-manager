@@ -79,7 +79,7 @@ export default class ImageManager extends Plugin {
 			logger.debug("Dangling Images", this.vaultState.getDanglingImages());
 
 			this.app.vault.on('create', async (file: TAbstractFile) => {
-				logger.trace("Create handler", "entered");
+				logger.debug("Create handler", { message: "entered" });
 				logger.debug("Created file", file);
 
 				if (file instanceof TFile) {
@@ -97,7 +97,7 @@ export default class ImageManager extends Plugin {
 			});
 
 			this.app.vault.on('modify', async (file: TAbstractFile) => {
-				logger.trace("Modify handler", "entered");
+				logger.debug("Modify handler", { message: "entered" });
 				logger.debug("Modified file", file);
 
 				if (file instanceof TFile && isDocument(file)) {
@@ -111,9 +111,9 @@ export default class ImageManager extends Plugin {
 			});
 
 			this.app.vault.on('rename', (newFile: TAbstractFile, oldPath: string) => {
-				logger.trace("Rename handler", "entered");
+				logger.debug("Rename handler", { message: "entered" });
 				logger.debug("New file", newFile);
-				logger.debug("Oldpath", oldPath);
+				logger.debug("Oldpath", { message: oldPath });
 
 				if (newFile instanceof TFile) {
 					if (isImage(newFile)) {
@@ -124,7 +124,7 @@ export default class ImageManager extends Plugin {
 			});
 
 			this.app.vault.on('delete', (file: TAbstractFile) => {
-				logger.trace("Delete handler", "entered");
+				logger.debug("Delete handler", { message: "entered" });
 				logger.debug("Deleted file", file);
 
 				if (file instanceof TFile) {
@@ -212,18 +212,18 @@ class ManageModal extends Modal {
 			deleteButton.onClickEvent(() => {
 				this.app.fileManager.promptForDeletion(file).then(() => {
 					if (file.deleted) {
-						logger.trace("delete-button", "User approved removal.");
+						logger.debug("delete-button", { message: "User approved removal." });
 
 						const deleteEntryCard = entryGridContainer.querySelector("div[data-file-path='" + file.path + "']");
 						if (deleteEntryCard !== null) {
 							entryGridContainer.removeChild(deleteEntryCard);
 						} else {
-							logger.error("delete-button", "Removed file {" + file.name + "} but did not find entryCard to remove from list");
+							logger.error("delete-button", { message: "Removed file {" + file.name + "} but did not find entryCard to remove from list" });
 							new Notice("File with name {" + file.name + "} was deleted but we could not update the list. Closing modal.");
 							this.close();
 						}
 					} else {
-						logger.trace("delete-button", "User denied removal.");
+						logger.debug("delete-button", { message: "User denied removal." });
 					}
 				});
 			});

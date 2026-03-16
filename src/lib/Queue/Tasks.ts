@@ -154,8 +154,6 @@ export class RenameImage implements Task {
 			this.vaultState.addImage(this.newImage);
 
 			logger.debug("PhysicalImages after addImage: ", this.vaultState.physicalImages);
-		} catch (e) {
-			throw e;
 		} finally {
 			this.vaultState.releaseLock();
 		}

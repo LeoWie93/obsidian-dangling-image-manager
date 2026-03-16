@@ -139,7 +139,7 @@ export default class ImageManager extends Plugin {
 
 		this.addCommand({
 			id: 'image-cleanup',
-			name: 'Image Cleanup Manager',
+			name: 'Open image manager ui',
 			callback: () => {
 				new ManageModal(this.app, this.vaultState).open();
 			}
@@ -174,11 +174,11 @@ class ManageModal extends Modal {
 
 		const modal: Element | null = this.containerEl.querySelector("div.modal");
 		if (modal instanceof HTMLElement) {
-			modal.style.width = "100%";
+			modal.classList.add("width_100");
 		}
 
 		const modalTitle: HTMLHeadingElement = document.createElement("h1");
-		modalTitle.setText("Image Manager");
+		modalTitle.setText("Image manager");
 		contentEl.appendChild(modalTitle);
 
 		const entryGridContainer = document.createElement("div");
@@ -200,8 +200,8 @@ class ManageModal extends Modal {
 			openButton.type = "button";
 			openButton.classList.add("open-image-button");
 			openButton.setText("Open image");
-			openButton.onClickEvent(() => {
-				this.app.workspace.getLeaf().openFile(file);
+			openButton.onClickEvent(async () => {
+				await this.app.workspace.getLeaf().openFile(file);
 				this.close();
 			});
 

@@ -1,7 +1,7 @@
 import { App, TFile } from "obsidian";
 import * as logger from "./Logger";
 
-const mdImageLinkRegex = /\[\[([^\|\]]+\.(?:avif|bmp|gif|jpg|jpeg|png|svg|webp))(?:[^\]]*)?\]\]/g;
+const mdImageLinkRegex = /\[\[([^|\]]+\.(?:avif|bmp|gif|jpg|jpeg|png|svg|webp))(?:[^\]]*)?\]\]/g;
 const canvasImageLinkRegex = /"file":"(?:[^"/]*\/)*([\w -]+\.(?:avif|bmp|gif|jpg|jpeg|png|svg|webp))"/g;
 
 export const supportedImageExtensions: string[] = ["avif", "bmp", "gif", "jpg", "jpeg", "png", "svg", "webp"];

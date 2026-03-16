@@ -145,7 +145,7 @@ export class RenameImage implements Task {
 		}
 
 		try {
-			const oldImageName = getFirstMatchInString(this.oldPath, /[\w\/ -:]+\/([\w_ -]+\.(?:png|jpg|jpeg))/g);
+			const oldImageName = getFirstMatchInString(this.oldPath, /[\w/ -:]+\/([\w_ -]+\.(?:png|jpg|jpeg))/g);
 			if (!oldImageName) {
 				throw new Error("Could not get name from old image path: " + this.oldPath);
 			}

@@ -6,10 +6,9 @@ export {
 	error
 };
 
-type loglevel = 0 | 1 | 2 | 3 | 4 | 5;
-let LOG_LEVEL: loglevel = 5;
+let LOG_LEVEL: number = 5;
 
-const setLoglevel = (level: loglevel) => LOG_LEVEL = level;
+const setLoglevel = (level: number) => LOG_LEVEL = level;
 
 const trace = (context: String, value: any) => {
 	if (LOG_LEVEL <= 2) {

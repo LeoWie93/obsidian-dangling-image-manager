@@ -7,7 +7,14 @@ import { SyncTaskQueue } from 'lib/Queue/SyncTaskQueue';
 import { AddImage, RemoveDocument, RemoveImage, RenameImage, UpdateImageRelations } from 'lib/Queue/Tasks';
 import * as logger from 'lib/Logger';
 
-// Remember to rename these classes and interfaces!
+
+//Obsidian does not make this field public on its own.
+declare module "obsidian" {
+	interface TFile {
+		deleted: boolean;
+	}
+}
+
 export default class ImageManager extends Plugin {
 	syncQueue: SyncTaskQueue = new SyncTaskQueue();
 	settings: ImageManagerSettings;
@@ -36,7 +43,6 @@ export default class ImageManager extends Plugin {
 
 
 			const documentFiles: TFile[] = files.filter((file: TFile) => {
-				// file.deleted does not exist per interface BUT is present anyways. So yeah ignore this error because typescript?
 				return (supportedTextfileExtensions.includes(file.extension) && !file.deleted);
 			});
 

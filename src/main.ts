@@ -210,7 +210,7 @@ class ManageModal extends Modal {
 			deleteButton.classList.add("delete-image-button");
 			deleteButton.setText("Delete image");
 			deleteButton.onClickEvent(() => {
-				this.app.fileManager.promptForDeletion(file).then(() => {
+				void this.app.fileManager.promptForDeletion(file).then(() => {
 					if (file.deleted) {
 						logger.debug("delete-button", { message: "User approved removal." });
 

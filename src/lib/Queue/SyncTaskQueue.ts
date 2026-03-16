@@ -9,7 +9,7 @@ export class SyncTaskQueue {
 
 	enqueue(task: Task): void {
 		this.queue.push(task);
-		this.dequeue().then(() => { });
+		void this.dequeue();
 	}
 
 	async dequeue(): Promise<void> {
@@ -36,7 +36,7 @@ export class SyncTaskQueue {
 		}
 
 		this.locked = false;
-		await this.dequeue().then(() => { });
+		void this.dequeue();
 	}
 }
 

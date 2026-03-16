@@ -25,7 +25,7 @@ export class ImageManagerSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName("Logging Level")
+			.setName("Logging level")
 			.addDropdown(dropDown => dropDown
 				.addOptions({ "5": "Errors", "4": "Warnings", "3": "Debugging", "2": "Tracing" })
 				.setValue(String(this.plugin.settings.logLevel))
@@ -42,7 +42,7 @@ export class ImageManagerSettingTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
-			.setName("Performance Tracking")
+			.setName("Performance tracking")
 			.setDesc("Enable Browser `Performance` measuring in the Developer Console for the plugins startup.")
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.performanceTrackingEnabled)

@@ -10,7 +10,9 @@ export function isImage(file: TFile): boolean {
 }
 
 export function getFirstMatchInString(content: string, regex: RegExp): string | undefined {
-	const firstMatch: RegExpMatchArray | undefined = content.matchAll(regex).next().value;
+	const matches: IterableIterator<RegExpMatchArray> = content.matchAll(regex);
+	const firstMatch: RegExpMatchArray | undefined = matches.next().value;
+
 	if (firstMatch === undefined) {
 		return undefined;
 	}

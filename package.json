@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-dangling-image-manager",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"description": "Find and delete dangling images with a simple ui.",
 	"main": "main.js",
 	"type": "module",

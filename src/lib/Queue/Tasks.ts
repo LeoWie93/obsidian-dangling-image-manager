@@ -6,12 +6,14 @@ import * as logger from "../Logger";
 export interface Task {
 	retries: number;
 	vaultState: VaultState;
-	execute(): Promise<void>;
+	kind: 'sync' | 'async';
+	execute(): void | Promise<void>;
 }
 
 export class UpdateImageRelations implements Task {
 	retries: number = 0;
 	vaultState: VaultState;
+	kind = "sync" as const;
 	imageName: string;
 	document: TFile;
 
@@ -25,7 +27,7 @@ export class UpdateImageRelations implements Task {
 		this.vaultState = vaultState;
 	}
 
-	async execute(): Promise<void> {
+	execute(): void {
 		const gotLock: boolean = this.vaultState.getLock();
 
 		if (!gotLock) {
@@ -39,6 +41,7 @@ export class UpdateImageRelations implements Task {
 }
 
 export class RemoveDocument implements Task {
+	kind = "sync" as const;
 	retries: number = 0;
 	vaultState: VaultState;
 	document: TFile;
@@ -51,7 +54,7 @@ export class RemoveDocument implements Task {
 		this.vaultState = vaultState;
 	}
 
-	async execute(): Promise<void> {
+	execute(): void {
 		const gotLock: boolean = this.vaultState.getLock();
 
 		if (!gotLock) {
@@ -66,6 +69,7 @@ export class RemoveDocument implements Task {
 }
 
 export class RemoveImage implements Task {
+	kind = "sync" as const;
 	retries: number = 0;
 	vaultState: VaultState;
 	image: TFile;
@@ -78,7 +82,7 @@ export class RemoveImage implements Task {
 		this.vaultState = vaultState;
 	}
 
-	async execute(): Promise<void> {
+	execute(): void {
 		const gotLock: boolean = this.vaultState.getLock();
 
 		if (!gotLock) {
@@ -93,6 +97,7 @@ export class RemoveImage implements Task {
 }
 
 export class AddImage implements Task {
+	kind = "sync" as const;
 	retries: number = 0;
 	vaultState: VaultState;
 	image: TFile;
@@ -105,7 +110,7 @@ export class AddImage implements Task {
 		this.vaultState = vaultState;
 	}
 
-	async execute(): Promise<void> {
+	execute(): void {
 		const gotLock: boolean = this.vaultState.getLock();
 
 		if (!gotLock) {
@@ -122,6 +127,7 @@ export class AddImage implements Task {
 //Renaming of the linking documents does Obsidian on its own and will trigger "modify" on each
 //of them which will be handled by our handlers
 export class RenameImage implements Task {
+	kind = 'sync' as const;
 	retries: number = 0;
 	vaultState: VaultState;
 	oldPath: string;
@@ -137,7 +143,7 @@ export class RenameImage implements Task {
 		this.vaultState = vaultState;
 	}
 
-	async execute(): Promise<void> {
+	execute(): void {
 		const gotLock: boolean = this.vaultState.getLock();
 
 		if (!gotLock) {

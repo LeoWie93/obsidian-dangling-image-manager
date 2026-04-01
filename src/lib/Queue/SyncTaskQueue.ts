@@ -25,13 +25,19 @@ export class SyncTaskQueue {
 
 		const task: Task | undefined = this.queue.shift();
 
-		try {
-			await task?.execute();
-		} catch (e) {
-			if (e instanceof Error) {
-				logger.error("Task failed with error", { message: e.message });
-			} else {
-				logger.error("Task failed", { error: e });
+		if (task !== undefined) {
+			try {
+				if (task?.kind == 'async') {
+					await task?.execute();
+				} else {
+					task?.execute();
+				}
+			} catch (e) {
+				if (e instanceof Error) {
+					logger.error("Task failed with error", { message: e.message });
+				} else {
+					logger.error("Task failed", { error: e });
+				}
 			}
 		}
 

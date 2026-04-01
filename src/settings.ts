@@ -31,12 +31,10 @@ export class ImageManagerSettingTab extends PluginSettingTab {
 				.setValue(String(this.plugin.settings.logLevel))
 				.onChange(async (value) => {
 					const newValue: number = Number(value);
-					try {
-						if (newValue >= 0 && newValue <= 5) {
-							this.plugin.settings.logLevel = newValue;
-							await this.plugin.saveSettings();
-						}
-					} catch (e) {
+					if (newValue >= 0 && newValue <= 5) {
+						this.plugin.settings.logLevel = newValue;
+						await this.plugin.saveSettings();
+					} else {
 						console.error("Settings", String(newValue) + " is not a valid loglevel");
 					}
 				}));

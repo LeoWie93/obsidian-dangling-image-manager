@@ -139,7 +139,7 @@ export default class ImageManager extends Plugin {
 
 		this.addCommand({
 			id: 'image-cleanup',
-			name: 'Image manager - open UI',
+			name: 'open ui',
 			callback: () => {
 				new ManageModal(this.app, this.vaultState).open();
 			}

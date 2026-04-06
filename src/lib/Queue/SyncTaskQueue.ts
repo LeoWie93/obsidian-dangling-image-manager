@@ -1,13 +1,13 @@
-import { Task } from "./Tasks";
+import { TaskType } from "./Tasks";
 import * as logger from "../Logger";
 
 //TODO rewrite to use objects and not classes
 export class SyncTaskQueue {
-	queue: Task[] = [];
+	queue: TaskType[] = [];
 	locked: boolean = false;
 	//TODO deadletter queue?
 
-	enqueue(task: Task): void {
+	enqueue(task: TaskType): void {
 		this.queue.push(task);
 		void this.dequeue();
 	}
@@ -23,7 +23,7 @@ export class SyncTaskQueue {
 
 		this.locked = true;
 
-		const task: Task | undefined = this.queue.shift();
+		const task: TaskType | undefined = this.queue.shift();
 
 		if (task !== undefined) {
 			try {

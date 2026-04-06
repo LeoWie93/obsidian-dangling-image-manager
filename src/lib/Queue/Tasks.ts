@@ -3,17 +3,27 @@ import { VaultState } from "lib/VaultState";
 import { TFile } from "obsidian";
 import * as logger from "../Logger";
 
-export interface Task {
+interface Task {
 	retries: number;
 	vaultState: VaultState;
-	kind: 'sync' | 'async';
-	execute(): void | Promise<void>;
 }
 
-export class UpdateImageRelations implements Task {
+interface SyncTask extends Task {
+	kind: 'sync';
+	execute(): void;
+}
+interface AsyncTask extends Task {
+	kind: 'async';
+	execute(): Promise<void>;
+}
+
+export type TaskType = SyncTask | AsyncTask;
+
+
+export class UpdateImageRelations implements SyncTask {
+	kind = 'sync' as const;
 	retries: number = 0;
 	vaultState: VaultState;
-	kind = "sync" as const;
 	imageName: string;
 	document: TFile;
 
@@ -40,7 +50,7 @@ export class UpdateImageRelations implements Task {
 	}
 }
 
-export class RemoveDocument implements Task {
+export class RemoveDocument implements SyncTask {
 	kind = "sync" as const;
 	retries: number = 0;
 	vaultState: VaultState;
@@ -68,7 +78,7 @@ export class RemoveDocument implements Task {
 	}
 }
 
-export class RemoveImage implements Task {
+export class RemoveImage implements SyncTask {
 	kind = "sync" as const;
 	retries: number = 0;
 	vaultState: VaultState;
@@ -96,7 +106,7 @@ export class RemoveImage implements Task {
 	}
 }
 
-export class AddImage implements Task {
+export class AddImage implements SyncTask {
 	kind = "sync" as const;
 	retries: number = 0;
 	vaultState: VaultState;
@@ -126,7 +136,7 @@ export class AddImage implements Task {
 
 //Renaming of the linking documents does Obsidian on its own and will trigger "modify" on each
 //of them which will be handled by our handlers
-export class RenameImage implements Task {
+export class RenameImage implements SyncTask {
 	kind = 'sync' as const;
 	retries: number = 0;
 	vaultState: VaultState;

@@ -8,7 +8,7 @@
 - [ ] loading indicator / animation while parsing is in progress
 - [ ] unload vault on closing of the modal
 
-#### Documents with unused images
+#### Documents with references to removed images
 - [ ] List documents that reference not existing images
 - [ ] show relevant information of these documents
 - [ ] allow opening documents

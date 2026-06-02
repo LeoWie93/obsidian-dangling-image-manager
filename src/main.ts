@@ -185,67 +185,73 @@ class ManageModal extends Modal {
 		entryGridContainer.classList.add("entry-grid-container");
 
 		const danglingImages = this.vaultState.getDanglingImages();
-		danglingImages.forEach((file: TFile) => {
-			const entryCard = document.createElement("div");
-			entryCard.classList.add("entry-card");
-			entryCard.dataset.filePath = file.path;
+		if (danglingImages.length != 0) {
+			danglingImages.forEach((file: TFile) => {
+				const entryCard = document.createElement("div");
+				entryCard.classList.add("entry-card");
+				entryCard.dataset.filePath = file.path;
 
-			const name = document.createElement("h3");
-			name.setText(file.basename);
+				const name = document.createElement("h3");
+				name.setText(file.basename);
 
-			const filePath = document.createElement("p");
-			filePath.setText(file.path);
+				const filePath = document.createElement("p");
+				filePath.setText(file.path);
 
-			const openButton = document.createElement("button");
-			openButton.type = "button";
-			openButton.classList.add("open-image-button");
-			openButton.setText("Open image");
-			openButton.onClickEvent(async () => {
-				await this.app.workspace.getLeaf().openFile(file);
-				this.close();
-			});
-
-			const deleteButton = document.createElement("button");
-			deleteButton.type = "button";
-			deleteButton.classList.add("delete-image-button");
-			deleteButton.setText("Delete image");
-			deleteButton.onClickEvent(() => {
-				void this.app.fileManager.promptForDeletion(file).then(() => {
-					if (file.deleted) {
-						logger.debug("delete-button", { message: "User approved removal." });
-
-						const deleteEntryCard = entryGridContainer.querySelector("div[data-file-path='" + file.path + "']");
-						if (deleteEntryCard !== null) {
-							entryGridContainer.removeChild(deleteEntryCard);
-						} else {
-							logger.error("delete-button", { message: "Removed file {" + file.name + "} but did not find entryCard to remove from list" });
-							new Notice("File with name {" + file.name + "} was deleted but we could not update the list. Closing modal.");
-							this.close();
-						}
-					} else {
-						logger.debug("delete-button", { message: "User denied removal." });
-					}
+				const openButton = document.createElement("button");
+				openButton.type = "button";
+				openButton.classList.add("open-image-button");
+				openButton.setText("Open image");
+				openButton.onClickEvent(async () => {
+					await this.app.workspace.getLeaf().openFile(file);
+					this.close();
 				});
+
+				const deleteButton = document.createElement("button");
+				deleteButton.type = "button";
+				deleteButton.classList.add("delete-image-button");
+				deleteButton.setText("Delete image");
+				deleteButton.onClickEvent(() => {
+					void this.app.fileManager.promptForDeletion(file).then(() => {
+						if (file.deleted) {
+							logger.debug("delete-button", { message: "User approved removal." });
+
+							const deleteEntryCard = entryGridContainer.querySelector("div[data-file-path='" + file.path + "']");
+							if (deleteEntryCard !== null) {
+								entryGridContainer.removeChild(deleteEntryCard);
+							} else {
+								logger.error("delete-button", { message: "Removed file {" + file.name + "} but did not find entryCard to remove from list" });
+								new Notice("File with name {" + file.name + "} was deleted but we could not update the list. Closing modal.");
+								this.close();
+							}
+						} else {
+							logger.debug("delete-button", { message: "User denied removal." });
+						}
+					});
+				});
+
+				const buttonGroup = document.createElement("div");
+				buttonGroup.classList.add("button-group");
+				buttonGroup.appendChild(openButton);
+				buttonGroup.appendChild(deleteButton);
+
+				// Preview Image
+				const resourcePath = this.app.vault.getResourcePath(file);
+				const previewImage = document.createElement("img");
+				previewImage.src = resourcePath;
+
+				entryCard.appendChild(name);
+				entryCard.appendChild(filePath);
+				entryCard.appendChild(previewImage);
+				entryCard.appendChild(buttonGroup);
+				entryGridContainer.appendChild(entryCard);
 			});
 
-			const buttonGroup = document.createElement("div");
-			buttonGroup.classList.add("button-group");
-			buttonGroup.appendChild(openButton);
-			buttonGroup.appendChild(deleteButton);
-
-			// Preview Image
-			const resourcePath = this.app.vault.getResourcePath(file);
-			const previewImage = document.createElement("img");
-			previewImage.src = resourcePath;
-
-			entryCard.appendChild(name);
-			entryCard.appendChild(filePath);
-			entryCard.appendChild(previewImage);
-			entryCard.appendChild(buttonGroup);
-			entryGridContainer.appendChild(entryCard);
-		});
-
-		contentEl.appendChild(entryGridContainer);
+			contentEl.appendChild(entryGridContainer);
+		} else {
+			const emptyInfo: HTMLHeadingElement = document.createElement("h2");
+			modalTitle.setText("The vault currently does not contain dangling images.");
+			contentEl.appendChild(emptyInfo);
+		}
 	}
 
 	onClose() {
